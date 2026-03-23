@@ -1,5 +1,5 @@
 - name: Configuracion basica usuarios
-  hosts: vms_lab
+  hosts: rocky9
   gather_facts: no
 
   roles:
