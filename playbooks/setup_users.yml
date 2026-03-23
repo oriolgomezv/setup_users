@@ -1,0 +1,7 @@
+- name: Configuracion basica usuarios
+  hosts: vms_lab
+  gather_facts: no
+
+  roles:
+    - conectividad
+    - crear_usuario

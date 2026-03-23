@@ -1,0 +1,40 @@
+- name: Generar password aleatorio si el usuario lo marca
+  set_fact:
+    password_seleccionada: "{{ lookup('password', '/dev/null length=12 chars=ascii_letters,digits') }}"
+  when: auto_password | default(false) | bool
+
+- name: Usar password creado por el usuario
+  set_fact:
+    password_seleccionada: "{{ password | default('') }}"
+  when: not (auto_password | default(false) | bool)
+
+- name: Crear usuario con su home
+  become: yes
+  ansible.builtin.user:
+    name: "{{ usuario }}"
+    groups: "{{ grupo | default('users') }}"
+    append: yes
+    password: "{{ password_seleccionada | password_hash('sha512') }}"
+    create_home: yes
+  register: output_usuario
+
+- name: Guardar pass en fichero tmp
+  copy:
+    content: "Usuario: {{ usuario }} | Password: {{ password_seleccionada }}"
+    dest: "/tmp/password_{{ usuario }}.txt"
+  when: auto_password | default(false) | bool
+
+- name: Printar mensaje si se ha creado el user
+  debug:
+    msg: "✅ Usuario '{{ usuario }}' creado correctamente"
+  when: output_usuario.changed
+
+- name: Usuario ya existe
+  debug:
+    msg: "El usuario '{{ usuario }}' ya existía "
+  when: not output_usuario.changed
+
+- name: Exportar password a Rundeck
+  debug:
+    msg: "RUNDECK:DATA:password=Usuario {{ usuario }} | Password {{ password_seleccionada }}"
+  when: auto_password | default(false) | bool
