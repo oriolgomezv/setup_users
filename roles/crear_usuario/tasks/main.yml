@@ -1,12 +1,7 @@
-- name: Generar password aleatorio si el usuario lo marca
-  set_fact:
-    password_seleccionada: "{{ lookup('password', '/dev/null length=12 chars=ascii_letters,digits') }}"
-  when: auto_password | default(false) | bool
-
-- name: Usar password creado por el usuario
-  set_fact:
-    password_seleccionada: "{{ password | default('') }}"
-  when: not (auto_password | default(false) | bool)
+- name: Generar hash del password
+  command: "openssl passwd -6 {{ password }}"
+  register: password_hash_cmd
+  changed_when: false
 
 - name: Crear usuario con su home
   become: yes
@@ -14,27 +9,16 @@
     name: "{{ usuario }}"
     groups: "{{ grupo | default('users') }}"
     append: yes
-    password: "{{ password_seleccionada | password_hash('sha512') }}"
+    password: "{{ password_hash_cmd.stdout }}"
     create_home: yes
   register: output_usuario
 
-- name: Guardar pass en fichero tmp
-  copy:
-    content: "Usuario: {{ usuario }} | Password: {{ password_seleccionada }}"
-    dest: "/tmp/password_{{ usuario }}.txt"
-  when: auto_password | default(false) | bool
-
-- name: Printar mensaje si se ha creado el user
+- name: Usuario creado
   debug:
     msg: "✅ Usuario '{{ usuario }}' creado correctamente"
   when: output_usuario.changed
 
-- name: Usuario ya existe
+- name: Usuario ya existía
   debug:
-    msg: "El usuario '{{ usuario }}' ya existía "
+    msg: "ℹ️ El usuario '{{ usuario }}' ya existía"
   when: not output_usuario.changed
-
-- name: Exportar password a Rundeck
-  debug:
-    msg: "RUNDECK:DATA:password=Usuario {{ usuario }} | Password {{ password_seleccionada }}"
-  when: auto_password | default(false) | bool
