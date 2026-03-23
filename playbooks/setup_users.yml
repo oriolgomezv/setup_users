@@ -1,5 +1,5 @@
 - name: Configuracion basica usuarios
-  hosts: all
+  hosts: {{ target_group }}
   gather_facts: no
 
   roles:
