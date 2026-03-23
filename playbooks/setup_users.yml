@@ -1,5 +1,5 @@
 - name: Configuracion basica usuarios
-  hosts: rocky9
+  hosts: all
   gather_facts: no
 
   roles:
